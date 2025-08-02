@@ -19,7 +19,7 @@ sp500["Target"] = (sp500["NextDayClose"] > sp500["Close"]).astype(int)
 sp500 = sp500.loc["2000-01-01":].copy()
 
 # print(sp500)
-
+        
 model = RandomForestClassifier(n_estimators=100, min_samples_split=100, random_state=1)
 
 train = sp500.iloc[:-100]    
@@ -35,8 +35,34 @@ preds = pd.Series(preds,index=test.index)
 
 score = precision_score(test["Target"],preds)
 
-print(score)    
+# print(score)    
 
-combined = pd.concat([test["Target"],preds],axis=1)
-combined.plot()
-plt.show();
+
+def predict(test,train,model,predictors):
+    model.fit(train[predictors],train["Target"])
+    preds = model.predict(test[predictors])
+    preds = pd.Series(preds,index=test.index,name="Predictions")
+    combined = pd.concat([test["Target"],preds],axis=1)
+    return combined
+
+
+def backtest(data,model,predictors,start=2500,step=250):
+    all_predictions = []
+    for i in range(start,data.shape[0],step):
+        train = data.iloc[0:i].copy()
+        test = data.iloc[i:i+step].copy()
+        predictions = predict(test,train,model,predictors)
+        all_predictions.append(predictions)
+    return pd.concat(all_predictions)
+
+predictions = backtest(sp500,model,predictors)
+
+# noOfPredictions = predictions["Predictions"].value_counts() 
+# print(noOfPredictions) 
+
+predPercentage = (predictions["Predictions"].value_counts()/predictions.shape[0])*100 
+print(predPercentage) 
+
+predictScore = precision_score(predictions["Target"],predictions["Predictions"])
+print("Precision Score: ",predictScore)
+
