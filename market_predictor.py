@@ -60,9 +60,25 @@ predictions = backtest(sp500,model,predictors)
 # noOfPredictions = predictions["Predictions"].value_counts() 
 # print(noOfPredictions) 
 
-predPercentage = (predictions["Predictions"].value_counts()/predictions.shape[0])*100 
-print(predPercentage) 
+# predPercentage = (predictions["Predictions"].value_counts()/predictions.shape[0])*100 
+# print(predPercentage) 
 
 predictScore = precision_score(predictions["Target"],predictions["Predictions"])
 print("Precision Score: ",predictScore)
 
+horizons = [2,5,250,1000]
+new_predictors = []
+
+for hor in horizons:
+    rolling_avg = sp500.rolling(hor).mean()
+
+    ratio_column = f"Close_Ratio_{hor}"
+    sp500[ratio_column] = sp500["Close"]/rolling_avg["Close"]
+
+    trend_column = f"Trend_{hor}"
+    sp500[trend_column] = sp500.shift(1).rolling(hor).sum()["Target"]
+    
+    new_predictors+=[ratio_column,trend_column]
+
+# sp500 = sp500.dropna()
+print(sp500)
