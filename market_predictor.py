@@ -40,7 +40,9 @@ score = precision_score(test["Target"],preds)
 
 def predict(test,train,model,predictors):
     model.fit(train[predictors],train["Target"])
-    preds = model.predict(test[predictors])
+    preds = model.predict_proba(test[predictors])[:,1]
+    preds[preds>=.6] = 1
+    preds[preds<.6] = 0
     preds = pd.Series(preds,index=test.index,name="Predictions")
     combined = pd.concat([test["Target"],preds],axis=1)
     return combined
@@ -81,4 +83,13 @@ for hor in horizons:
     new_predictors+=[ratio_column,trend_column]
 
 # sp500 = sp500.dropna()
+
+new_predictions = backtest(sp500,model,new_predictors)
+
+precisionScore = precision_score(new_predictions["Target"],new_predictions["Predictions"]) 
+print("Precison Score: ",precisionScore)
+
+noOfNewPredictions = new_predictions["Predictions"].value_counts()
+print(noOfNewPredictions)
+
 print(sp500)
