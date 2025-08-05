@@ -4,26 +4,26 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import precision_score 
 
-spBSE = yf.Ticker("^BSESN")
-spBSE = spBSE.history(period="max")
+testIndex = yf.Ticker("NVDA")
+testIndex = testIndex.history(period="max")
 
-# spBSE.plot(y="Close", use_index=True)
+# testIndex.plot(y="Close", use_index=True)
 # plt.show()
 
-del spBSE["Dividends"]
-del spBSE["Stock Splits"]
+del testIndex["Dividends"]
+del testIndex["Stock Splits"]
 
-spBSE["NextDayClose"] = spBSE["Close"].shift(-1)
-spBSE["Target"] = (spBSE["NextDayClose"] > spBSE["Close"]).astype(int)
+testIndex["NextDayClose"] = testIndex["Close"].shift(-1)
+testIndex["Target"] = (testIndex["NextDayClose"] > testIndex["Close"]).astype(int)
 
-spBSE = spBSE.loc["2000-01-01":].copy()
+testIndex = testIndex.loc["2000-01-01":].copy()
 
-# print(spBSE)
+# print(testIndex)
         
 model = RandomForestClassifier(n_estimators=100, min_samples_split=100, random_state=1)
 
-train = spBSE.iloc[:-100]    
-test = spBSE.iloc[-100:]    
+train = testIndex.iloc[:-100]    
+test = testIndex.iloc[-100:]    
 
 predictors = ["Open", "High", "Low", "Close", "Volume"]
 model.fit(train[predictors],train["Target"])
@@ -57,7 +57,7 @@ def backtest(data,model,predictors,start=2500,step=250):
         all_predictions.append(predictions)
     return pd.concat(all_predictions)
 
-predictions = backtest(spBSE,model,predictors)
+predictions = backtest(testIndex,model,predictors)
 
 # noOfPredictions = predictions["Predictions"].value_counts() 
 # print(noOfPredictions) 
@@ -72,19 +72,19 @@ horizons = [2,5,250,1000]
 new_predictors = []
 
 for hor in horizons:
-    rolling_avg = spBSE.rolling(hor).mean()
+    rolling_avg = testIndex.rolling(hor).mean()
 
     ratio_column = f"Close_Ratio_{hor}"
-    spBSE[ratio_column] = spBSE["Close"]/rolling_avg["Close"]
+    testIndex[ratio_column] = testIndex["Close"]/rolling_avg["Close"]
 
     trend_column = f"Trend_{hor}"
-    spBSE[trend_column] = spBSE.shift(1).rolling(hor).sum()["Target"]
+    testIndex[trend_column] = testIndex.shift(1).rolling(hor).sum()["Target"]
     
     new_predictors+=[ratio_column,trend_column]
 
-# spBSE = spBSE.dropna()
+# testIndex = testIndex.dropna()
 
-new_predictions = backtest(spBSE,model,new_predictors)
+new_predictions = backtest(testIndex,model,new_predictors)
 
 precisionScore = precision_score(new_predictions["Target"],new_predictions["Predictions"]) 
 print("Precison Score: ",precisionScore)
@@ -92,4 +92,4 @@ print("Precison Score: ",precisionScore)
 noOfNewPredictions = new_predictions["Predictions"].value_counts()
 print(noOfNewPredictions)
 
-print(spBSE)
+print(testIndex)
